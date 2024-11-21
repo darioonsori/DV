@@ -50,18 +50,17 @@ document.addEventListener("DOMContentLoaded", function () {
         "Vietnam": "Asia",
     };
 
-    // Funzione per determinare il continente
-    function getContinent(entity) {
+function getContinent(entity) {
         if (continentMapping[entity]) {
-            return continentMapping[entity]; // Restituisce il continente
+            return continentMapping[entity];
         } else if (entity.includes("GCP") || entity.includes("excl.") || entity === "World") {
-            return null; // Ignora aggregazioni
+            return null;
         } else {
-            return "Unknown"; // Fallback per entità non mappate
+            return "Unknown";
         }
     }
 
-d3.csv("co2-fossil-plus-land-use.csv").then(data => {
+    d3.csv("co2-fossil-plus-land-use.csv").then(data => {
         const year = 2020;
         const filteredData = data.filter(d => +d.Year === year);
 
@@ -113,26 +112,11 @@ d3.csv("co2-fossil-plus-land-use.csv").then(data => {
 
     function createAlluvialChart(data) {
         const width = 1000;
-        const height = 600;
+        const height = 500;
 
         const svg = d3.select("#chart").append("svg")
             .attr("width", width)
             .attr("height", height);
-
-        const defs = svg.append("defs");
-        const gradient = defs.append("linearGradient")
-            .attr("id", "gradient")
-            .attr("x1", "0%")
-            .attr("x2", "100%")
-            .attr("y1", "0%")
-            .attr("y2", "0%");
-
-        gradient.append("stop")
-            .attr("offset", "0%")
-            .attr("stop-color", "#1D3557");
-        gradient.append("stop")
-            .attr("offset", "100%")
-            .attr("stop-color", "#E63946");
 
         const nodes = Array.from(new Set(data.map(d => d.source).concat(data.map(d => d.target))))
             .map(name => ({ name }));
@@ -146,8 +130,8 @@ d3.csv("co2-fossil-plus-land-use.csv").then(data => {
 
         const sankey = d3.sankey()
             .nodeWidth(20)
-            .nodePadding(70) // Aumenta lo spazio verticale
-            .extent([[50, 30], [width - 50, height - 30]]);
+            .nodePadding(50)
+            .extent([[1, 30], [width - 1, height - 30]]); // Margini superiore e inferiore
 
         const graph = sankey({
             nodes: nodes.map(d => Object.assign({}, d)),
@@ -162,32 +146,31 @@ d3.csv("co2-fossil-plus-land-use.csv").then(data => {
             .attr("y", d => d.y0)
             .attr("width", d => d.x1 - d.x0)
             .attr("height", d => Math.max(1, d.y1 - d.y0))
-            .attr("fill", d => d.name in continentMapping ? "#F4A261" : "#2A9D8F")
+            .attr("fill", d => d.name in continentMapping ? "#F4A261" : d.name === "Fossil" ? "#2A9D8F" : "#E76F51")
             .attr("stroke", "#264653")
             .append("title")
             .text(d => `${d.name}\n${d.value}`);
 
         const tooltip = d3.select("#tooltip");
 
-svg.append("g")
-    .attr("fill", "none")
-    .selectAll("path")
-    .data(graph.links)
-    .join("path")
-    .attr("d", d3.sankeyLinkHorizontal())
-    .attr("stroke", "url(#gradient)")
-    .attr("stroke-opacity", 0.8)
-    .attr("stroke-width", d => Math.max(3, d.width)) // Garantisce uno spessore minimo
-    .on("mouseover", (event, d) => {
-        tooltip.style("display", "block")
-            .html(`Source: ${d.source.name}<br>Target: ${d.target.name}<br>Value: ${d.value}`);
-    })
-    .on("mousemove", event => {
-        tooltip.style("top", (event.pageY + 10) + "px")
-            .style("left", (event.pageX + 10) + "px");
-    })
-    .on("mouseout", () => tooltip.style("display", "none"));
-
+        svg.append("g")
+            .attr("fill", "none")
+            .selectAll("path")
+            .data(graph.links)
+            .join("path")
+            .attr("d", d3.sankeyLinkHorizontal())
+            .attr("stroke", d => d.type === "Fossil" ? "#1D3557" : "#E63946")
+            .attr("stroke-opacity", 0.8)
+            .attr("stroke-width", d => Math.max(2, d.width))
+            .on("mouseover", (event, d) => {
+                tooltip.style("display", "block")
+                    .html(`Source: ${d.source.name}<br>Target: ${d.target.name}<br>Value: ${d.value}`);
+            })
+            .on("mousemove", event => {
+                tooltip.style("top", (event.pageY + 10) + "px")
+                    .style("left", (event.pageX + 10) + "px");
+            })
+            .on("mouseout", () => tooltip.style("display", "none"));
 
         svg.append("g")
             .selectAll("text")
@@ -199,6 +182,33 @@ svg.append("g")
             .attr("text-anchor", d => (d.x0 < width / 2 ? "start" : "end"))
             .text(d => d.name)
             .attr("fill", "#000")
+            .style("font-size", "12px");
+
+        const legend = svg.append("g")
+            .attr("transform", `translate(${width / 2 - 100}, -50)`); // Posizionata sopra il grafico
+
+        legend.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", 15)
+            .attr("height", 15)
+            .attr("fill", "#1D3557");
+        legend.append("text")
+            .attr("x", 20)
+            .attr("y", 12)
+            .text("Fossil Emissions")
+            .style("font-size", "12px");
+
+        legend.append("rect")
+            .attr("x", 0)
+            .attr("y", 20)
+            .attr("width", 15)
+            .attr("height", 15)
+            .attr("fill", "#E63946");
+        legend.append("text")
+            .attr("x", 20)
+            .attr("y", 32)
+            .text("Land-Use Emissions")
             .style("font-size", "12px");
     }
 });
