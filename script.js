@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-d3.csv("data/co2-fossil-plus-land-use.csv").then(data => {
+d3.csv("co2-fossil-plus-land-use.csv").then(data => {
         const year = 2020;
         const filteredData = data.filter(d => +d.Year === year);
 
