@@ -116,8 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Errore nel caricamento del CSV:", error);
     });
 
-    // Funzione per creare il grafico alluvionale
-    function createAlluvialChart(data) {
+       function createAlluvialChart(data) {
         const width = 800;
         const height = 500;
 
@@ -133,23 +132,15 @@ document.addEventListener("DOMContentLoaded", function () {
             value: d.value
         }));
 
-        // Filtra i collegamenti circolari
+        // Filtra i collegamenti circolari e duplicati
         links = links.filter(link => link.source !== link.target);
-        
-        // Filtra i collegamenti duplicati
         const seenLinks = new Set();
         links = links.filter(link => {
             const key = `${link.source}-${link.target}`;
-            if (seenLinks.has(key)) {
-                return false;
-            }
+            if (seenLinks.has(key)) return false;
             seenLinks.add(key);
             return true;
         });
-        
-        // Filtra i collegamenti con valori molto bassi
-        const MIN_VALUE_THRESHOLD = 1e6; // Soglia minima
-        links = links.filter(link => link.value >= MIN_VALUE_THRESHOLD);
 
         const sankey = d3.sankey()
             .nodeWidth(20)
@@ -170,8 +161,8 @@ document.addEventListener("DOMContentLoaded", function () {
             .attr("y", d => d.y0)
             .attr("width", d => d.x1 - d.x0)
             .attr("height", d => Math.max(1, d.y1 - d.y0))
-            .attr("fill", d => d.name in continentMapping ? "#FFD700" : d.name === "Fossil" ? "#FF4500" : "#32CD32")
-            .attr("stroke", "#000")
+            .attr("fill", d => d.name in continentMapping ? "#F4A261" : d.name === "Fossil" ? "#2A9D8F" : "#E76F51")
+            .attr("stroke", "#264653")
             .append("title")
             .text(d => `${d.name}\n${d.value}`);
 
@@ -182,8 +173,8 @@ document.addEventListener("DOMContentLoaded", function () {
             .data(graph.links)
             .join("path")
             .attr("d", d3.sankeyLinkHorizontal())
-            .attr("stroke", d => d.type === "Fossil" ? "#FF4500" : "#32CD32")
-            .attr("stroke-opacity", 0.6)
+            .attr("stroke", d => d.type === "Fossil" ? "#2A9D8F" : "#E76F51")
+            .attr("stroke-opacity", 0.8)
             .attr("stroke-width", d => Math.max(2, d.width)) // Larghezza minima di 2
             .append("title")
             .text(d => `${d.source.name} → ${d.target.name}\n${d.value}`);
@@ -193,10 +184,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .selectAll("text")
             .data(graph.nodes)
             .join("text")
-            .attr("x", d => d.x0 - 6) // Posizionamento a sinistra
-            .attr("y", d => (d.y1 + d.y0) / 2) // Centro del nodo
+            .attr("x", d => (d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)) // Posizionamento a sinistra o destra
+            .attr("y", d => (d.y1 + d.y0) / 2)
             .attr("dy", "0.35em")
-            .attr("text-anchor", "end")
+            .attr("text-anchor", d => (d.x0 < width / 2 ? "start" : "end")) // Allineamento dinamico
             .text(d => d.name)
             .attr("fill", "#000")
             .style("font-size", "12px");
