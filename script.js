@@ -133,6 +133,20 @@ document.addEventListener("DOMContentLoaded", function () {
             value: d.value
         }));
 
+        // Filtra i collegamenti circolari
+        links = links.filter(link => link.source !== link.target);
+        
+        // Filtra i collegamenti duplicati
+        const seenLinks = new Set();
+        links = links.filter(link => {
+            const key = `${link.source}-${link.target}`;
+            if (seenLinks.has(key)) {
+                return false;
+            }
+            seenLinks.add(key);
+            return true;
+        });
+        
         // Filtra i collegamenti con valori molto bassi
         const MIN_VALUE_THRESHOLD = 1e6; // Soglia minima
         links = links.filter(link => link.value >= MIN_VALUE_THRESHOLD);
