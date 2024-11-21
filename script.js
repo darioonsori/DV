@@ -169,24 +169,25 @@ d3.csv("co2-fossil-plus-land-use.csv").then(data => {
 
         const tooltip = d3.select("#tooltip");
 
-        svg.append("g")
-            .attr("fill", "none")
-            .selectAll("path")
-            .data(graph.links)
-            .join("path")
-            .attr("d", d3.sankeyLinkHorizontal())
-            .attr("stroke", "url(#gradient)")
-            .attr("stroke-opacity", 0.8)
-            .attr("stroke-width", d => Math.max(2, d.width))
-            .on("mouseover", (event, d) => {
-                tooltip.style("display", "block")
-                    .html(`Source: ${d.source.name}<br>Target: ${d.target.name}<br>Value: ${d.value}`);
-            })
-            .on("mousemove", event => {
-                tooltip.style("top", (event.pageY + 10) + "px")
-                    .style("left", (event.pageX + 10) + "px");
-            })
-            .on("mouseout", () => tooltip.style("display", "none"));
+svg.append("g")
+    .attr("fill", "none")
+    .selectAll("path")
+    .data(graph.links)
+    .join("path")
+    .attr("d", d3.sankeyLinkHorizontal())
+    .attr("stroke", "url(#gradient)")
+    .attr("stroke-opacity", 0.8)
+    .attr("stroke-width", d => Math.max(3, d.width)) // Garantisce uno spessore minimo
+    .on("mouseover", (event, d) => {
+        tooltip.style("display", "block")
+            .html(`Source: ${d.source.name}<br>Target: ${d.target.name}<br>Value: ${d.value}`);
+    })
+    .on("mousemove", event => {
+        tooltip.style("top", (event.pageY + 10) + "px")
+            .style("left", (event.pageX + 10) + "px");
+    })
+    .on("mouseout", () => tooltip.style("display", "none"));
+
 
         svg.append("g")
             .selectAll("text")
