@@ -61,12 +61,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Carica i dati dal CSV
-    d3.csv("co2-fossil-plus-land-use.csv").then(data => {
-        const year = 2020; // Anno di interesse
+d3.csv("co2-fossil-plus-land-use.csv").then(data => {
+        const year = 2020;
         const filteredData = data.filter(d => +d.Year === year);
 
-        // Calcola le emissioni totali per ogni paese
         const emissionsByCountry = {};
         filteredData.forEach(d => {
             const continent = getContinent(d.Entity);
@@ -77,7 +75,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // Seleziona i primi 5 paesi per emissioni in ogni continente
         const topCountries = {};
         Object.keys(emissionsByCountry).forEach(continent => {
             topCountries[continent] = emissionsByCountry[continent]
@@ -90,7 +87,6 @@ document.addEventListener("DOMContentLoaded", function () {
         filteredData.forEach(d => {
             const continent = getContinent(d.Entity);
             if (continent && continent !== "Unknown" && topCountries[continent].includes(d.Entity)) {
-                // Fossil Emissions
                 if (+d["Annual CO₂ emissions"] > 0) {
                     chartData.push({
                         source: continent,
@@ -99,7 +95,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         type: "Fossil"
                     });
                 }
-                // Land-Use Emissions
                 if (+d["Annual CO₂ emissions from land-use change"] > 0) {
                     chartData.push({
                         source: continent,
@@ -116,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Errore nel caricamento del CSV:", error);
     });
 
-function createAlluvialChart(data) {
+    function createAlluvialChart(data) {
         const width = 1000;
         const height = 500;
 
@@ -137,7 +132,7 @@ function createAlluvialChart(data) {
         const sankey = d3.sankey()
             .nodeWidth(20)
             .nodePadding(50)
-            .extent([[1, 1], [width - 1, height - 1]]);
+            .extent([[1, 30], [width - 1, height - 30]]); // Margini superiore e inferiore
 
         const graph = sankey({
             nodes: nodes.map(d => Object.assign({}, d)),
@@ -182,7 +177,7 @@ function createAlluvialChart(data) {
             .selectAll("text")
             .data(graph.nodes)
             .join("text")
-            .attr("x", d => (d.x0 < width / 2 ? d.x1 + 10 : d.x0 - 10))
+            .attr("x", d => (d.x0 < width / 2 ? d.x1 + 15 : d.x0 - 15))
             .attr("y", d => (d.y1 + d.y0) / 2)
             .attr("dy", "0.35em")
             .attr("text-anchor", d => (d.x0 < width / 2 ? "start" : "end"))
@@ -191,7 +186,7 @@ function createAlluvialChart(data) {
             .style("font-size", "12px");
 
         const legend = svg.append("g")
-            .attr("transform", `translate(${width - 200}, 20)`);
+            .attr("transform", `translate(${width / 2 - 100}, -50)`); // Posizionata sopra il grafico
 
         legend.append("rect")
             .attr("x", 0)
