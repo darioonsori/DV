@@ -116,8 +116,8 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Errore nel caricamento del CSV:", error);
     });
 
-       function createAlluvialChart(data) {
-        const width = 800;
+function createAlluvialChart(data) {
+        const width = 1000;
         const height = 500;
 
         const svg = d3.select("#chart").append("svg")
@@ -132,19 +132,11 @@ document.addEventListener("DOMContentLoaded", function () {
             value: d.value
         }));
 
-        // Filtra i collegamenti circolari e duplicati
         links = links.filter(link => link.source !== link.target);
-        const seenLinks = new Set();
-        links = links.filter(link => {
-            const key = `${link.source}-${link.target}`;
-            if (seenLinks.has(key)) return false;
-            seenLinks.add(key);
-            return true;
-        });
 
         const sankey = d3.sankey()
             .nodeWidth(20)
-            .nodePadding(40) // Maggiore spazio tra i nodi
+            .nodePadding(50)
             .extent([[1, 1], [width - 1, height - 1]]);
 
         const graph = sankey({
@@ -152,7 +144,6 @@ document.addEventListener("DOMContentLoaded", function () {
             links: links.map(d => Object.assign({}, d))
         });
 
-        // Disegna i nodi
         svg.append("g")
             .selectAll("rect")
             .data(graph.nodes)
@@ -166,30 +157,64 @@ document.addEventListener("DOMContentLoaded", function () {
             .append("title")
             .text(d => `${d.name}\n${d.value}`);
 
-        // Disegna i collegamenti
+        const tooltip = d3.select("#tooltip");
+
         svg.append("g")
             .attr("fill", "none")
             .selectAll("path")
             .data(graph.links)
             .join("path")
             .attr("d", d3.sankeyLinkHorizontal())
-            .attr("stroke", d => d.type === "Fossil" ? "#2A9D8F" : "#E76F51")
+            .attr("stroke", d => d.type === "Fossil" ? "#1D3557" : "#E63946")
             .attr("stroke-opacity", 0.8)
-            .attr("stroke-width", d => Math.max(2, d.width)) // Larghezza minima di 2
-            .append("title")
-            .text(d => `${d.source.name} → ${d.target.name}\n${d.value}`);
+            .attr("stroke-width", d => Math.max(2, d.width))
+            .on("mouseover", (event, d) => {
+                tooltip.style("display", "block")
+                    .html(`Source: ${d.source.name}<br>Target: ${d.target.name}<br>Value: ${d.value}`);
+            })
+            .on("mousemove", event => {
+                tooltip.style("top", (event.pageY + 10) + "px")
+                    .style("left", (event.pageX + 10) + "px");
+            })
+            .on("mouseout", () => tooltip.style("display", "none"));
 
-        // Etichette dei nodi
         svg.append("g")
             .selectAll("text")
             .data(graph.nodes)
             .join("text")
-            .attr("x", d => (d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)) // Posizionamento a sinistra o destra
+            .attr("x", d => (d.x0 < width / 2 ? d.x1 + 10 : d.x0 - 10))
             .attr("y", d => (d.y1 + d.y0) / 2)
             .attr("dy", "0.35em")
-            .attr("text-anchor", d => (d.x0 < width / 2 ? "start" : "end")) // Allineamento dinamico
+            .attr("text-anchor", d => (d.x0 < width / 2 ? "start" : "end"))
             .text(d => d.name)
             .attr("fill", "#000")
+            .style("font-size", "12px");
+
+        const legend = svg.append("g")
+            .attr("transform", `translate(${width - 200}, 20)`);
+
+        legend.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", 15)
+            .attr("height", 15)
+            .attr("fill", "#1D3557");
+        legend.append("text")
+            .attr("x", 20)
+            .attr("y", 12)
+            .text("Fossil Emissions")
+            .style("font-size", "12px");
+
+        legend.append("rect")
+            .attr("x", 0)
+            .attr("y", 20)
+            .attr("width", 15)
+            .attr("height", 15)
+            .attr("fill", "#E63946");
+        legend.append("text")
+            .attr("x", 20)
+            .attr("y", 32)
+            .text("Land-Use Emissions")
             .style("font-size", "12px");
     }
 });
