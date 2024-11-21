@@ -96,58 +96,59 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Errore nel caricamento del CSV:", error);
     });
 
-    // Funzione per creare il grafico alluvionale
-    function createAlluvialChart(data) {
-        const width = 800;
-        const height = 500;
+   function createAlluvialChart(data) {
+    const width = 800;
+    const height = 500;
 
-        const svg = d3.select("#chart").append("svg")
-            .attr("width", width)
-            .attr("height", height);
+    const svg = d3.select("#chart").append("svg")
+        .attr("width", width)
+        .attr("height", height);
 
-        const nodes = Array.from(new Set(data.map(d => d.source).concat(data.map(d => d.target))))
-            .map(name => ({ name }));
-        const links = data.map(d => ({
-            source: nodes.findIndex(n => n.name === d.source),
-            target: nodes.findIndex(n => n.name === d.target),
-            value: d.value
-        }));
+    const nodes = Array.from(new Set(data.map(d => d.source).concat(data.map(d => d.target))))
+        .map(name => ({ name }));
+    let links = data.map(d => ({
+        source: nodes.findIndex(n => n.name === d.source),
+        target: nodes.findIndex(n => n.name === d.target),
+        value: d.value
+    }));
 
-        const sankey = d3.sankey()
-            .nodeWidth(20)
-            .nodePadding(20)
-            .extent([[1, 1], [width - 1, height - 1]]);
+    // Filtra i collegamenti circolari
+    links = links.filter(link => link.source !== link.target);
 
-        const graph = sankey({
-            nodes: nodes.map(d => Object.assign({}, d)),
-            links: links.map(d => Object.assign({}, d))
-        });
+    const sankey = d3.sankey()
+        .nodeWidth(20)
+        .nodePadding(20)
+        .extent([[1, 1], [width - 1, height - 1]]);
 
-        // Disegna i nodi
-        svg.append("g")
-            .selectAll("rect")
-            .data(graph.nodes)
-            .join("rect")
-            .attr("x", d => d.x0)
-            .attr("y", d => d.y0)
-            .attr("width", d => d.x1 - d.x0)
-            .attr("height", d => Math.max(1, d.y1 - d.y0))
-            .attr("fill", d => d.name in continentMapping ? "#FFD700" : d.name === "Fossil" ? "#FF5733" : "#33FF57")
-            .attr("stroke", "#000")
-            .append("title")
-            .text(d => `${d.name}\n${d.value}`);
+    const graph = sankey({
+        nodes: nodes.map(d => Object.assign({}, d)),
+        links: links.map(d => Object.assign({}, d))
+    });
 
-        // Disegna i collegamenti
-        svg.append("g")
-            .attr("fill", "none")
-            .selectAll("path")
-            .data(graph.links)
-            .join("path")
-            .attr("d", d3.sankeyLinkHorizontal())
-            .attr("stroke", d => d.type === "Fossil" ? "#FF5733" : "#33FF57")
-            .attr("stroke-opacity", 0.5)
-            .attr("stroke-width", d => Math.max(1, d.width))
-            .append("title")
-            .text(d => `${d.source.name} → ${d.target.name}\n${d.value}`);
-    }
-});
+    // Disegna i nodi
+    svg.append("g")
+        .selectAll("rect")
+        .data(graph.nodes)
+        .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => Math.max(1, d.y1 - d.y0))
+        .attr("fill", d => d.name in continentMapping ? "#FFD700" : d.name === "Fossil" ? "#FF5733" : "#33FF57")
+        .attr("stroke", "#000")
+        .append("title")
+        .text(d => `${d.name}\n${d.value}`);
+
+    // Disegna i collegamenti
+    svg.append("g")
+        .attr("fill", "none")
+        .selectAll("path")
+        .data(graph.links)
+        .join("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("stroke", d => d.type === "Fossil" ? "#FF5733" : "#33FF57")
+        .attr("stroke-opacity", 0.5)
+        .attr("stroke-width", d => Math.max(1, d.width))
+        .append("title")
+        .text(d => `${d.source.name} → ${d.target.name}\n${d.value}`);
+}
