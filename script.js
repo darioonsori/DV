@@ -70,7 +70,7 @@ function createAlluvialChart(data) {
         .attr("x", d => d.x0)
         .attr("y", d => d.y0)
         .attr("width", d => d.x1 - d.x0)
-        .attr("height", d => d.y1 - d.y0)
+        .attr("height", d => Math.max(1, d.y1 - d.y0)) // Imposta altezza minima a 1
         .attr("fill", "steelblue")
         .append("title")
         .text(d => `${d.name}\n${d.value}`);
