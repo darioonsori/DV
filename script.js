@@ -61,40 +61,60 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Carica i dati dal CSV
-    d3.csv("co2-fossil-plus-land-use.csv").then(data => {
-        const year = 2020; // Anno di interesse
-        const filteredData = data.filter(d => +d.Year === year);
+d3.csv("co2-fossil-plus-land-use.csv").then(data => {
+    const year = 2020; // Anno di interesse
+    const filteredData = data.filter(d => +d.Year === year);
 
-        const chartData = [];
-        filteredData.forEach(d => {
-            const continent = getContinent(d.Entity);
-            if (continent && continent !== "Unknown") {
-                // Fossil Emissions
-                if (+d["Annual CO₂ emissions"] > 0) {
-                    chartData.push({
-                        source: continent,
-                        target: d.Entity,
-                        value: +d["Annual CO₂ emissions"],
-                        type: "Fossil"
-                    });
-                }
-                // Land-Use Emissions
-                if (+d["Annual CO₂ emissions from land-use change"] > 0) {
-                    chartData.push({
-                        source: continent,
-                        target: d.Entity,
-                        value: +d["Annual CO₂ emissions from land-use change"],
-                        type: "Land"
-                    });
-                }
-            }
-        });
-
-        createAlluvialChart(chartData);
-    }).catch(error => {
-        console.error("Errore nel caricamento del CSV:", error);
+    // Calcola le emissioni totali per ogni paese
+    const emissionsByCountry = {};
+    filteredData.forEach(d => {
+        const continent = getContinent(d.Entity);
+        if (continent && continent !== "Unknown") {
+            const totalEmissions = +d["Annual CO₂ emissions"] + +d["Annual CO₂ emissions from land-use change"];
+            if (!emissionsByCountry[continent]) emissionsByCountry[continent] = [];
+            emissionsByCountry[continent].push({ country: d.Entity, emissions: totalEmissions });
+        }
     });
+
+    // Seleziona i primi 5 paesi per emissioni in ogni continente
+    const topCountries = {};
+    Object.keys(emissionsByCountry).forEach(continent => {
+        topCountries[continent] = emissionsByCountry[continent]
+            .sort((a, b) => b.emissions - a.emissions)
+            .slice(0, 5)
+            .map(d => d.country);
+    });
+
+    const chartData = [];
+    filteredData.forEach(d => {
+        const continent = getContinent(d.Entity);
+        if (continent && continent !== "Unknown" && topCountries[continent].includes(d.Entity)) {
+            // Fossil Emissions
+            if (+d["Annual CO₂ emissions"] > 0) {
+                chartData.push({
+                    source: continent,
+                    target: d.Entity,
+                    value: +d["Annual CO₂ emissions"],
+                    type: "Fossil"
+                });
+            }
+            // Land-Use Emissions
+            if (+d["Annual CO₂ emissions from land-use change"] > 0) {
+                chartData.push({
+                    source: continent,
+                    target: d.Entity,
+                    value: +d["Annual CO₂ emissions from land-use change"],
+                    type: "Land"
+                });
+            }
+        }
+    });
+
+    createAlluvialChart(chartData);
+}).catch(error => {
+    console.error("Errore nel caricamento del CSV:", error);
+});
+
 
    function createAlluvialChart(data) {
     const width = 800;
@@ -117,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const sankey = d3.sankey()
         .nodeWidth(20)
-        .nodePadding(20)
+        .nodePadding(30)
         .extent([[1, 1], [width - 1, height - 1]]);
 
     const graph = sankey({
@@ -125,19 +145,19 @@ document.addEventListener("DOMContentLoaded", function () {
         links: links.map(d => Object.assign({}, d))
     });
 
-    // Disegna i nodi
-    svg.append("g")
-        .selectAll("rect")
-        .data(graph.nodes)
-        .join("rect")
-        .attr("x", d => d.x0)
-        .attr("y", d => d.y0)
-        .attr("width", d => d.x1 - d.x0)
-        .attr("height", d => Math.max(1, d.y1 - d.y0))
-        .attr("fill", d => d.name in continentMapping ? "#FFD700" : d.name === "Fossil" ? "#FF5733" : "#33FF57")
-        .attr("stroke", "#000")
-        .append("title")
-        .text(d => `${d.name}\n${d.value}`);
+   svg.append("g")
+    .selectAll("rect")
+    .data(graph.nodes)
+    .join("rect")
+    .attr("x", d => d.x0)
+    .attr("y", d => d.y0)
+    .attr("width", d => d.x1 - d.x0)
+    .attr("height", d => Math.max(1, d.y1 - d.y0))
+    .attr("fill", d => d.name in continentMapping ? "#FFD700" : d.name === "Fossil" ? "#FF4500" : "#32CD32")
+    .attr("stroke", "#000")
+    .append("title")
+    .text(d => `${d.name}\n${d.value}`);
+
 
     // Disegna i collegamenti
     svg.append("g")
