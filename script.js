@@ -1,63 +1,79 @@
-// Carica i dati e prepara il grafico
 document.addEventListener("DOMContentLoaded", function () {
+    // Carica i dati dal CSV
     d3.csv("co2-fossil-plus-land-use.csv").then(data => {
-        // Filtra i dati per un anno specifico, ad esempio 2020
-        const filteredData = data.filter(d => +d.Year === 2020);
+        // Filtra i dati per un anno specifico (ad esempio 2020)
+        const year = 2020;
+        const filteredData = data.filter(d => +d.Year === year);
 
-        // Prepara i dati per il grafico
+        // Prepara i dati per il grafico alluvionale
         const chartData = [];
         filteredData.forEach(d => {
-            chartData.push({
-                source: d.Entity,
-                target: "Fossil",
-                value: +d["Annual CO₂ emissions"]
-            });
-            chartData.push({
-                source: d.Entity,
-                target: "Land",
-                value: +d["Annual CO₂ emissions from land-use change"]
-            });
+            if (+d["Annual CO₂ emissions"] > 0) {
+                chartData.push({
+                    source: d.Entity,
+                    target: "Fossil",
+                    value: +d["Annual CO₂ emissions"]
+                });
+            }
+            if (+d["Annual CO₂ emissions from land-use change"] > 0) {
+                chartData.push({
+                    source: d.Entity,
+                    target: "Land",
+                    value: +d["Annual CO₂ emissions from land-use change"]
+                });
+            }
         });
 
-        // Crea il grafico alluvionale
+        // Crea il grafico
         createAlluvialChart(chartData);
+    }).catch(error => {
+        console.error("Errore nel caricamento del CSV:", error);
     });
 });
 
 // Funzione per creare il grafico alluvionale
 function createAlluvialChart(data) {
+    // Definizione della dimensione del grafico
+    const width = 800;
+    const height = 500;
+
+    // Seleziona il div e aggiunge un elemento SVG
     const svg = d3.select("#chart").append("svg")
-        .attr("width", 800)
-        .attr("height", 500);
+        .attr("width", width)
+        .attr("height", height);
 
     // Definizione dei nodi e dei collegamenti
-    const nodes = [...new Set(data.map(d => d.source).concat(data.map(d => d.target)))];
+    const nodes = Array.from(new Set(data.map(d => d.source).concat(data.map(d => d.target))))
+        .map(name => ({ name }));
     const links = data.map(d => ({
-        source: nodes.indexOf(d.source),
-        target: nodes.indexOf(d.target),
+        source: nodes.findIndex(n => n.name === d.source),
+        target: nodes.findIndex(n => n.name === d.target),
         value: d.value
     }));
 
+    // Creazione del layout Sankey
     const sankey = d3.sankey()
         .nodeWidth(20)
         .nodePadding(10)
-        .extent([[1, 1], [799, 499]]);
+        .extent([[1, 1], [width - 1, height - 1]]);
 
     const graph = sankey({
-        nodes: nodes.map(name => ({ name })),
-        links
+        nodes: nodes.map(d => Object.assign({}, d)),
+        links: links.map(d => Object.assign({}, d))
     });
 
-    // Disegna i rettangoli dei nodi
+    // Disegna i nodi
     svg.append("g")
         .selectAll("rect")
         .data(graph.nodes)
         .join("rect")
         .attr("x", d => d.x0)
         .attr("y", d => d.y0)
-        .attr("height", d => d.y1 - d.y0)
         .attr("width", d => d.x1 - d.x0)
-        .attr("fill", "steelblue");
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", "steelblue")
+        .append("title")
+        .text(d => `${d.name}\n${d.value}`);
 
     // Disegna i collegamenti
     svg.append("g")
@@ -67,6 +83,7 @@ function createAlluvialChart(data) {
         .join("path")
         .attr("d", d3.sankeyLinkHorizontal())
         .attr("stroke", "gray")
-        .attr("stroke-width", d => d.width);
+        .attr("stroke-width", d => Math.max(1, d.width))
+        .append("title")
+        .text(d => `${d.source.name} → ${d.target.name}\n${d.value}`);
 }
-
